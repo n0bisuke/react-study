@@ -1,0 +1,27 @@
+{
+  "name": "react-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "watchify src/app.jsx -d -o dest/app.js -v",
+    "build": "browserify src/app.jsx > dest/app.js && uglifyjs -o dest/app.js dest/app.js"
+  },
+  "browserify": {
+    "transform": [
+      "reactify"
+    ]
+  },
+  "author": "n0bisuke",
+  "license": "MIT",
+  "dependencies": {
+    "markdown": "^0.5.0",
+    "react": "^0.13.2"
+  },
+  "devDependencies": {
+    "browserify": "^10.1.3",
+    "reactify": "^1.1.0",
+    "uglify-js": "^2.4.21",
+    "watchify": "^3.2.1"
+  }
+}
