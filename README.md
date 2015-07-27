@@ -9,10 +9,10 @@ npm startした状態でapp.jsxを変更すると dest/app.js にビルドが走
 
 確認はindex.htmlで
 
-## counter-fluxブランチ
+## todo-fluxブランチ
 
-カウンタをflux実装
+todoリストをflux実装
 
-![](http://i.gyazo.com/5ba266c9c6183ca172b96171173c3f23.gif)
+![](http://i.gyazo.com/647651c91d4c36b242204cf4c18ebc72.gif)
 
 from Web+DB Press vol87 のnaoyaさん記事
