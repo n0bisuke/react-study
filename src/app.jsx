@@ -1,51 +1,54 @@
 var React = require('react');
-var mdparser = require('markdown').markdown;
 
-var App = React.createClass({
+var CounterApp = React.createClass({
   getInitialState: function(){
-    return { markdown: ''};
+    return { counter: 0}
   },
 
-  updateMarkdown: function(markdown){
-    this.setState({markdown: markdown});
+  handlePlus: function(){
+    this.setState({counter: this.state.counter + 1})
+  },
+
+  handleMinus: function(){
+    this.setState({counter: this.state.counter - 1})
   },
 
   render: function(){
     return (
       <div>
-        <TextInput onChange={this.updateMarkdown} />
-        <Markdown markdown={this.state.markdown} />
+        <Counter value={this.state.counter}
+          onClickPlus={this.handlePlus}
+          onClickMinus={this.handleMinus} />
       </div>
     );
   }
 });
 
-var TextInput = React.createClass({
-  propTypes:{
-    onChange: React.PropTypes.func.isRequired
-  },
-
-  _onChange: function(e){
-    this.props.onChange(e.target.value);
+var Counter = React.createClass({
+  propTypes: {
+    value: React.PropTypes.number.isRequired,
+    onClickPlus: React.PropTypes.func.isRequired,
+    onClickMinus: React.PropTypes.func.isRequired,
   },
 
   render: function(){
-    return <textarea onChange={this._onChange}></textarea>
-  }
-
-});
-
-//メッセージ表示部分をコンポーネント化
-var Markdown = React.createClass({
-  render: function(){
-    var html = mdparser.toHTML(this.props.markdown);
     return (
-      <div dangerouslySetInnerHTML={{__html:html}}></div>
+      <div>
+        <span>count: {this.props.value}</span>
+        <div>
+          <button onClick={this.props.onClickPlus}>
+            +1
+          </button>
+          <button onClick={this.props.onClickMinus}>
+            -1
+          </button>
+        </div>
+      </div>
     );
   }
 });
 
 React.render(
-  <App />,
+  <CounterApp />,
   document.getElementById('app-container')
 );

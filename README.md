@@ -9,6 +9,8 @@ npm startした状態でapp.jsxを変更すると dest/app.js にビルドが走
 
 確認はindex.htmlで
 
-## md-editブランチ
+## counterブランチ
 
-マークダウンエディタ
+カウンタ
+
+![](http://i.gyazo.com/5ba266c9c6183ca172b96171173c3f23.gif)
