@@ -15,6 +15,7 @@
   "author": "n0bisuke",
   "license": "MIT",
   "dependencies": {
+    "fluxxor": "^1.6.0",
     "markdown": "^0.5.0",
     "react": "^0.13.2"
   },
