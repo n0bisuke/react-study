@@ -3,17 +3,18 @@ var Fluxxor = require('fluxxor');
 
 var constants = {
   ADD_TODO:    "ADD_TODO",
-  TOGGLE_TODO: "TOGGLE_TODO"
+  TOGGLE_TODO: "TOGGLE_TODO",
+  LOAD_TODOS_SUCCESS: "LOAD_TODOS_SUCCESS" //追記
 };
 
 var TodoStore = Fluxxor.createStore({
   initialize: function() {
     this.todoId = 0;
     this.todos = {};
-
     this.bindActions(
       constants.ADD_TODO,    this.onAddTodo,
-      constants.TOGGLE_TODO, this.onToggleTodo
+      constants.TOGGLE_TODO, this.onToggleTodo,
+      constants.LOAD_TODOS_SUCCESS, this.onLoadTodosSuccess //追記
     );
   },
   onAddTodo: function(payload) {
@@ -31,12 +32,36 @@ var TodoStore = Fluxxor.createStore({
     this.todos[id].complete = !this.todos[id].complete;
     this.emit('change');
   },
+
+  //追加
+  onLoadTodosSuccess: function(payload){
+    payload.data.forEach(function(item){
+      var id = ++this.todoId;
+      var todo = {
+        id: id,
+        text: item.text,
+        complete: false
+      };
+      this.todos[id] = todo;
+    }.bind(this));
+    this.emit('change');
+  },
+
   getState: function() {
     return { todos: this.todos };
   }
 });
 
 var actions = {
+  //追加
+  loadTodos: function(){
+    $.ajax({
+      url: "./todos.json"
+    }).done(function(data){
+      this.dispatch(constants.LOAD_TODOS_SUCCESS, {data: data});
+    }.bind(this));
+  },
+
   addTodo: function(text) {
     this.dispatch(constants.ADD_TODO, {text: text});
   },
@@ -52,6 +77,7 @@ var TodoApp = React.createClass({
   mixins: [ FluxMixin, StoreWatchMixin("TodoStore") ],
 
   getInitialState: function() {
+    this.getFlux().actions.loadTodos();
     return { newTodoText: "" };
   },
   getStateFromFlux: function() {
