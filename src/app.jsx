@@ -3,10 +3,6 @@ var Fluxxor = require('fluxxor');
 var milkcocoa = new MilkCocoa("woodibru118b.mlkcca.com");
 var Mds = milkcocoa.dataStore('todos');
 
-// Mds.push({'text' : "iii" },function(err, pushed){
-//   console.log(pushed);
-// });
-
 var constants = {
   ADD_TODO:    "ADD_TODO",
   TOGGLE_TODO: "TOGGLE_TODO",
@@ -66,10 +62,17 @@ var actions = {
     }.bind(this));
   },
 
+  //追加: Milkcocoa
+  watchMilkcocoa: function(){
+    Mds.on('push', function(pushed){
+      this.dispatch(constants.ADD_TODO, {text: pushed.value.text});
+    }.bind(this));
+  },
+
   //変更: Milkcocoa
   addTodo: function(text) {
     Mds.push({'text' : text },function(err, pushed){
-      this.dispatch(constants.ADD_TODO, {text: pushed.value.text});
+      // this.dispatch(constants.ADD_TODO, {text: pushed.value.text});
     }.bind(this));
   },
 
@@ -86,6 +89,7 @@ var TodoApp = React.createClass({
 
   getInitialState: function() {
     this.getFlux().actions.loadTodos(); //追加: viewの呼び出し時にロード
+    this.getFlux().actions.watchMilkcocoa(); //追加: viewの呼び出し時にロード
     return { newTodoText: "" };
   },
   getStateFromFlux: function() {
