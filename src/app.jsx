@@ -1,5 +1,11 @@
 var React   = require('react');
 var Fluxxor = require('fluxxor');
+var milkcocoa = new MilkCocoa("woodibru118b.mlkcca.com");
+var Mds = milkcocoa.dataStore('todos');
+
+// Mds.push({'text' : "iii" },function(err, pushed){
+//   console.log(pushed);
+// });
 
 var constants = {
   ADD_TODO:    "ADD_TODO",
@@ -39,7 +45,7 @@ var TodoStore = Fluxxor.createStore({
       var id = ++this.todoId;
       var todo = {
         id: id,
-        text: item.text,
+        text: item.value.text, //変更: Milkcocoa
         complete: false
       };
       this.todos[id] = todo;
@@ -55,16 +61,18 @@ var TodoStore = Fluxxor.createStore({
 var actions = {
   //追加
   loadTodos: function(){
-    $.ajax({
-      url: "./todos.json"
-    }).done(function(data){
+    Mds.stream().sort('desc').next(function(err, data){
       this.dispatch(constants.LOAD_TODOS_SUCCESS, {data: data});
     }.bind(this));
   },
 
+  //変更: Milkcocoa
   addTodo: function(text) {
-    this.dispatch(constants.ADD_TODO, {text: text});
+    Mds.push({'text' : text },function(err, pushed){
+      this.dispatch(constants.ADD_TODO, {text: pushed.value.text});
+    }.bind(this));
   },
+
   toggleTodo: function(id) {
     this.dispatch(constants.TOGGLE_TODO, {id: id});
   }
