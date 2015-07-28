@@ -77,7 +77,7 @@ var TodoApp = React.createClass({
   mixins: [ FluxMixin, StoreWatchMixin("TodoStore") ],
 
   getInitialState: function() {
-    this.getFlux().actions.loadTodos();
+    this.getFlux().actions.loadTodos(); //追加: viewの呼び出し時にロード
     return { newTodoText: "" };
   },
   getStateFromFlux: function() {
@@ -110,10 +110,8 @@ var TodoApp = React.createClass({
 var TodoList = React.createClass({
   render: function() {
     var todos = Object.keys(this.props.todos).map(function(id) {
-      return <TodoItem key={id}
-                       todo={this.props.todos[id]} />;
+      return <TodoItem key={id} todo={this.props.todos[id]} />;
     }.bind(this));
-
     return <ul>{todos}</ul>;
   }
 });
@@ -124,6 +122,7 @@ var TodoItem = React.createClass({
   onCompleteChange: function() {
     this.getFlux().actions.toggleTodo(this.props.todo.id);
   },
+
   render: function() {
     var todo = this.props.todo;
     var style = {
