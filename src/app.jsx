@@ -5,9 +5,30 @@ var Mds = milkcocoa.dataStore('todos');
 
 var constants = {
   ADD_TODO:    "ADD_TODO",
-  TOGGLE_TODO: "TOGGLE_TODO",
+  DELETE_TODO: "DELETE_TODO",
   LOAD_TODOS_SUCCESS: "LOAD_TODOS_SUCCESS" //追記
 };
+
+function object_array_sort(data,key,order,fn){
+    //デフォは降順(DESC)
+    var num_a = -1;
+    var num_b = 1;
+
+    if(order === 'asc'){//指定があれば昇順(ASC)
+      num_a = 1;
+      num_b = -1;
+    }
+
+   data = data.sort(function(a, b){
+      var x = a[key];
+      var y = b[key];
+      if (x > y) return num_a;
+      if (x < y) return num_b;
+      return 0;
+    });
+
+   fn(data); // ソート後の配列を返す
+}
 
 var TodoStore = Fluxxor.createStore({
   initialize: function() {
@@ -15,7 +36,7 @@ var TodoStore = Fluxxor.createStore({
     this.todos = {};
     this.bindActions(
       constants.ADD_TODO,    this.onAddTodo,
-      constants.TOGGLE_TODO, this.onToggleTodo,
+      constants.DELETE_TODO, this.onDeleteTodo,
       constants.LOAD_TODOS_SUCCESS, this.onLoadTodosSuccess //追記
     );
   },
@@ -23,15 +44,20 @@ var TodoStore = Fluxxor.createStore({
     var id = ++this.todoId;
     var todo = {
       id: id,
+      username: payload.username,
       text: payload.text,
-      complete: false
+      milkcocoa_id: payload.milkcocoa_id
     };
     this.todos[id] = todo;
     this.emit('change');
   },
-  onToggleTodo: function(payload) {
-    var id = payload.id;
-    this.todos[id].complete = !this.todos[id].complete;
+
+  //変更
+  onDeleteTodo: function(payload) {
+    var id = payload.milkcocoa_id;
+    for (var key in this.todos){
+      if (this.todos[key].milkcocoa_id == id) delete this.todos[key];
+    }
     this.emit('change');
   },
 
@@ -41,8 +67,9 @@ var TodoStore = Fluxxor.createStore({
       var id = ++this.todoId;
       var todo = {
         id: id,
-        text: item.value.text, //変更: Milkcocoa
-        complete: false
+        username: item.value.username,
+        text: item.value.text,
+        milkcocoa_id: item.id
       };
       this.todos[id] = todo;
     }.bind(this));
@@ -64,20 +91,35 @@ var actions = {
 
   //追加: Milkcocoa
   watchMilkcocoa: function(){
+    //pushを監視
     Mds.on('push', function(pushed){
-      this.dispatch(constants.ADD_TODO, {text: pushed.value.text});
+      this.dispatch(constants.ADD_TODO, {
+        text: pushed.value.text,
+        username: pushed.value.username,
+        milkcocoa_id: pushed.id
+      });
+    }.bind(this));
+
+    //removeを監視
+    Mds.on('remove', function(removed){
+      this.dispatch(constants.DELETE_TODO, {milkcocoa_id: removed.id});
     }.bind(this));
   },
 
   //変更: Milkcocoa
-  addTodo: function(text) {
-    Mds.push({'text' : text },function(err, pushed){
+  addTodo: function(text,username) {
+    var pushData = {
+      'text' : text,
+      'username': username
+    };
+    Mds.push(pushData,function(err, pushed){
       // this.dispatch(constants.ADD_TODO, {text: pushed.value.text});
     }.bind(this));
   },
 
-  toggleTodo: function(id) {
-    this.dispatch(constants.TOGGLE_TODO, {id: id});
+  //追加
+  deleteTodo: function(id, milkcocoa_id) {
+    Mds.remove(milkcocoa_id);
   }
 };
 
@@ -90,7 +132,10 @@ var TodoApp = React.createClass({
   getInitialState: function() {
     this.getFlux().actions.loadTodos(); //追加: viewの呼び出し時にロード
     this.getFlux().actions.watchMilkcocoa(); //追加: viewの呼び出し時にロード
-    return { newTodoText: "" };
+    return {
+      newTodoText: "",
+      newUserText: ""
+    };
   },
   getStateFromFlux: function() {
     return this.getFlux().store('TodoStore').getState();
@@ -98,21 +143,35 @@ var TodoApp = React.createClass({
   onTextChange: function (e) {
     this.setState({newTodoText: e.target.value});
   },
+  //追加
+  onUserChange: function (e) {
+    this.setState({newUserText: e.target.value});
+  },
+
   onKeyDown: function (e) {
     // 13 == Enter Key Code
-    if (e.keyCode === 13 && this.state.newTodoText.trim()) {
-      this.getFlux().actions.addTodo(this.state.newTodoText);
+    if (e.keyCode === 13 && this.state.newTodoText.trim() && this.state.newUserText.trim()) {
+      this.getFlux().actions.addTodo(
+        this.state.newTodoText,
+        this.state.newUserText
+      );
       this.setState({ newTodoText: "" });
     }
   },
   render: function() {
     return (
       <div>
-        <h1>Flux TodoApp</h1>
+        <h1>Flux & Milkcocoa ChatApp</h1>
+        名前:
+        <input type="text"
+                onChange={this.onUserChange}
+                value={this.state.newUserText} />
+        内容:
         <input type="text"
                onKeyDown={this.onKeyDown}
                onChange={this.onTextChange}
                value={this.state.newTodoText} />
+
         <TodoList todos={this.state.todos} />
       </div>
     );
@@ -131,8 +190,11 @@ var TodoList = React.createClass({
 var TodoItem = React.createClass({
   mixins: [FluxMixin],
 
-  onCompleteChange: function() {
-    this.getFlux().actions.toggleTodo(this.props.todo.id);
+  onClickDelete: function() {
+    this.getFlux().actions.deleteTodo(
+      this.props.todo.id,
+      this.props.todo.milkcocoa_id
+    );
   },
 
   render: function() {
@@ -143,10 +205,10 @@ var TodoItem = React.createClass({
 
     return (
       <li>
-        <input type="checkbox"
-               checked={todo.complete}
-               onChange={this.onCompleteChange} />
-        <span style={style}>{todo.text}</span>
+        <span style={style}>[{todo.username}] </span>
+        <span style={style}>{todo.text} </span>
+        <a href="#" onClick={this.onClickDelete}>×</a>
+        <hr />
       </li>
     );
   }
